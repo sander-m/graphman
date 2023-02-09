@@ -3,16 +3,21 @@ import {
   IntrospectionObjectType,
   IntrospectionQuery,
 } from "https://esm.sh/v90/graphql@16.5.0";
+import { Header } from "./format.ts";
 
-async function query(url: string, query: string, authorization?: string) {
+async function query(url: string, query: string, requestHeaders: Header[]) { 
+  requestHeaders.push({key: "Content-Type", value: "application/json"})
+  requestHeaders.push({key: "Accept", value: "application/json"})
+
+  const headerRecord: Record<string, string> = {}
+
+  requestHeaders.forEach(header => {
+    headerRecord[header.key] = header.value
+  });
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Shopify-Storefront-Access-Token": authorization || "",
-      },
+      headers: headerRecord,
       body: JSON.stringify({
         query,
       }),
@@ -32,12 +37,12 @@ export function saveJsonFormatted(json: any, path: string) {
   });
 }
 
-export async function fetchIntrospection(url: string, authorization?: string) {
+export async function fetchIntrospection(url: string, requestHeaders: Header[]) {
   const introspectionQueryString = getIntrospectionQuery();
   const introspection = await query(
     url,
     introspectionQueryString,
-    authorization,
+    requestHeaders,
   );
   if (!introspection.data) {
     throw new Error(

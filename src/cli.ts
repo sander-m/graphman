@@ -5,6 +5,7 @@ import {
   ensureFileSync,
 } from "https://deno.land/std@0.151.0/fs/mod.ts";
 import { createPostmanCollection } from "./index.ts";
+import { Header } from "./format.ts";
 
 // @TODO: improve the CLI
 
@@ -22,7 +23,7 @@ const args = parse(Deno.args, { boolean: ["help", "h"] }) as {
   help?: boolean;
   h?: boolean;
   out?: string;
-  auth?: string;
+  headers?: string;
 };
 
 if (Deno.args.length < 1 || args.help || args.h) {
@@ -32,8 +33,13 @@ if (Deno.args.length < 1 || args.help || args.h) {
 
 const url = args._[0];
 let path = args.out;
-const authorization = args.auth;
-
+const requestHeaders: Header[] = [];
+if(args.headers) {
+  args.headers.split(',').forEach(header => {
+    const [key, value] = header.split(':');
+    requestHeaders.push({ key: key.trim(), value:  value.trim() })
+  });
+}
 const urlRegexp = /https?:\/\/*/;
 if (!urlRegexp.test(url)) {
   console.error(`${url} is not a valid url`);
@@ -42,7 +48,7 @@ if (!urlRegexp.test(url)) {
 
 console.log(`Creating the postman collection for ${url}`);
 
-const {postmanCollection} = await createPostmanCollection(url, authorization);
+const {postmanCollection} = await createPostmanCollection(url, requestHeaders);
 
 path = path || "./out/" + postmanCollection.info.name + ".postman_collection.json";
 path && ensureDirSync("./out/");

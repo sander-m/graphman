@@ -1,13 +1,15 @@
 import { FormattedQuery, QueryCollection } from "./converters.ts";
 
+export interface Header {
+  key: string;
+  value: string;
+}
+
 export interface PostmanItem {
   name: string;
   request: {
     method: string;
-    header: {
-      key: string;
-      value: string;
-    }[];
+    header: Header[];
     body: {
       mode: string;
       graphql: {
@@ -42,21 +44,19 @@ export interface PostmanCollection {
 function queryToItem(
   query: FormattedQuery,
   url: string,
-  authorization?: string,
+  requestHeaders: Header[]
 ): PostmanItem {
   const baseUrl = url.split("//")[1];
   const rootUrl = baseUrl.split("/")[0];
   const path = url.split("//")[1].split("/").slice(1);
   const host = [...rootUrl.split(".")];
   const protocol = url.split("://")[0];
-
+  console.log("me " +requestHeaders)
   const postmanItem: PostmanItem = {
     name: query.outrospectQuery.name,
     request: {
       method: "POST",
-      header: [
-        { key: "X-Shopify-Storefront-Access-Token", value: authorization || "" }
-      ],
+      header: requestHeaders,
       body: {
         mode: "graphql",
         graphql: {
@@ -81,17 +81,17 @@ function queryToItem(
 export function queryCollectionToPostmanCollection(
   queryCollection: QueryCollection,
   url: string,
-  authorization?: string,
+  requestHeaders: Header[],
 ) {
   const item: PostmanFolder[] = [];
   item.push({ name: "Queries", item: [] });
   queryCollection.queries.forEach((query) => {
-    item[0].item.push(queryToItem(query, url, authorization));
+    item[0].item.push(queryToItem(query, url, requestHeaders));
   });
   // @TODO: separate queries and mutations in folders
   item.push({ name: "Mutations", item: [] });
   queryCollection.mutations.forEach((query) => {
-    item[1].item.push(queryToItem(query, url, authorization));
+    item[1].item.push(queryToItem(query, url, requestHeaders));
   });
 
   const name = url.split("//")[1].split("/")[0] + "-GraphMan";
