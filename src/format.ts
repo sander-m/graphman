@@ -55,9 +55,7 @@ function queryToItem(
     request: {
       method: "POST",
       header: [
-        ...(authorization
-          ? [{ key: "Authorization", value: authorization }]
-          : []),
+        { key: "X-Shopify-Storefront-Access-Token", value: authorization || "" }
       ],
       body: {
         mode: "graphql",
