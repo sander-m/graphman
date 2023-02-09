@@ -4,14 +4,27 @@ import {
   IntrospectionQuery,
 } from "https://esm.sh/v90/graphql@16.5.0";
 
-async function query(url: string, query: string, authorization?: string) {
+import "https://deno.land/x/lodash@4.17.19/dist/lodash.js";
+
+// now `_` is imported in the global variable, which in deno is `self`
+const _ = (self as any)._;
+
+async function query(
+  url: string,
+  query: string,
+  customHeaders: object,
+) {
+  const standardHeaders = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
+
   try {
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Shopify-Storefront-Access-Token": authorization || "",
+        ...standardHeaders,
+        ...customHeaders,
       },
       body: JSON.stringify({
         query,
@@ -32,12 +45,15 @@ export function saveJsonFormatted(json: any, path: string) {
   });
 }
 
-export async function fetchIntrospection(url: string, authorization?: string) {
+export async function fetchIntrospection(
+  url: string,
+  customHeaders: object,
+) {
   const introspectionQueryString = getIntrospectionQuery();
   const introspection = await query(
     url,
     introspectionQueryString,
-    authorization,
+    customHeaders,
   );
   if (!introspection.data) {
     throw new Error(

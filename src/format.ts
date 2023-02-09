@@ -42,7 +42,7 @@ export interface PostmanCollection {
 function queryToItem(
   query: FormattedQuery,
   url: string,
-  authorization?: string,
+  customHeaders: object,
 ): PostmanItem {
   const baseUrl = url.split("//")[1];
   const rootUrl = baseUrl.split("/")[0];
@@ -50,15 +50,21 @@ function queryToItem(
   const host = [...rootUrl.split(".")];
   const protocol = url.split("://")[0];
 
+  const standardHeadersList = [
+    { key: "Content-Type", value: "application/json" },
+    { key: "Accept", value: "application/json" },
+  ];
+
+  const customHeadersList = Object.keys(customHeaders).map((key) => ({
+    key: key,
+    value: "",
+  }));
+
   const postmanItem: PostmanItem = {
     name: query.outrospectQuery.name,
     request: {
       method: "POST",
-      header: [
-        ...(authorization
-          ? [{ key: "Authorization", value: authorization }]
-          : []),
-      ],
+      header: [...customHeadersList, ...standardHeadersList],
       body: {
         mode: "graphql",
         graphql: {
@@ -83,17 +89,22 @@ function queryToItem(
 export function queryCollectionToPostmanCollection(
   queryCollection: QueryCollection,
   url: string,
+  authorizationHeader?: string,
   authorization?: string,
 ) {
   const item: PostmanFolder[] = [];
   item.push({ name: "Queries", item: [] });
   queryCollection.queries.forEach((query) => {
-    item[0].item.push(queryToItem(query, url, authorization));
+    item[0].item.push(
+      queryToItem(query, url, authorizationHeader, authorization),
+    );
   });
   // @TODO: separate queries and mutations in folders
   item.push({ name: "Mutations", item: [] });
   queryCollection.mutations.forEach((query) => {
-    item[1].item.push(queryToItem(query, url, authorization));
+    item[1].item.push(
+      queryToItem(query, url, authorizationHeader, authorization),
+    );
   });
 
   const name = url.split("//")[1].split("/")[0] + "-GraphMan";

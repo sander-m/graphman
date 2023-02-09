@@ -22,7 +22,7 @@ const args = parse(Deno.args, { boolean: ["help", "h"] }) as {
   help?: boolean;
   h?: boolean;
   out?: string;
-  auth?: string;
+  headers?: string;
 };
 
 if (Deno.args.length < 1 || args.help || args.h) {
@@ -32,7 +32,14 @@ if (Deno.args.length < 1 || args.help || args.h) {
 
 const url = args._[0];
 let path = args.out;
-const authorization = args.auth;
+const headerString = args.headers;
+
+const customHeaders = (headerString?.split(",") || [])
+  .map((header) => ({ key: header.split(":")[0], value: header.split(":")[1] }))
+  .reduce((map, pair: { key: string; value: string }) => {
+    map[pair.key.trim()] = pair.value.trim();
+    return map;
+  }, {});
 
 const urlRegexp = /https?:\/\/*/;
 if (!urlRegexp.test(url)) {
@@ -42,9 +49,13 @@ if (!urlRegexp.test(url)) {
 
 console.log(`Creating the postman collection for ${url}`);
 
-const {postmanCollection} = await createPostmanCollection(url, authorization);
+const { postmanCollection } = await createPostmanCollection(
+  url,
+  customHeaders,
+);
 
-path = path || "./out/" + postmanCollection.info.name + ".postman_collection.json";
+path = path ||
+  "./out/" + postmanCollection.info.name + ".postman_collection.json";
 path && ensureDirSync("./out/");
 try {
   !path && ensureFileSync(path);
