@@ -42,8 +42,7 @@ export interface PostmanCollection {
 function queryToItem(
   query: FormattedQuery,
   url: string,
-  authorizationHeader?: string,
-  authorization?: string,
+  customHeaders: object,
 ): PostmanItem {
   const baseUrl = url.split("//")[1];
   const rootUrl = baseUrl.split("/")[0];
@@ -51,15 +50,21 @@ function queryToItem(
   const host = [...rootUrl.split(".")];
   const protocol = url.split("://")[0];
 
+  const standardHeadersList = [
+    { key: "Content-Type", value: "application/json" },
+    { key: "Accept", value: "application/json" },
+  ];
+
+  const customHeadersList = Object.keys(customHeaders).map((key) => ({
+    key: key,
+    value: "",
+  }));
+
   const postmanItem: PostmanItem = {
     name: query.outrospectQuery.name,
     request: {
       method: "POST",
-      header: [
-        ...((authorization && authorizationHeader)
-          ? [{ key: authorizationHeader.trim(), value: authorization.trim() }]
-          : []),
-      ],
+      header: [...customHeadersList, ...standardHeadersList],
       body: {
         mode: "graphql",
         graphql: {
